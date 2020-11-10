@@ -1,0 +1,77 @@
+---
+title: "a3_task3_shane_dewees"
+author: "Shane Dewees"
+date: "11/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(lubridate)
+library(janitor)
+```
+
+## Reading in data
+
+```{r, warning=FALSE}
+urchins <- read.csv(here("data", "urchins.csv"))
+urchins <- clean_names(urchins)
+```
+
+## Exploratory data visualization to become aquainted with the data 
+  1. Histogram of size distribution between red and purple urchins. 
+  2. Box plot of size vs. common name. 
+  
+```{r, warning=FALSE}
+ggplot(urchins, aes(size, fill = common_name))+
+  geom_histogram(binwidth = 0.5)+
+  facet_wrap(~common_name)+
+  labs(x = "Urchin diameter (cm)", 
+       y = "Count")
+
+ggplot(urchins, aes(common_name, size, fill = common_name))+ 
+  geom_boxplot() +
+  labs(x = "Urchin species",
+       y = "Urchin diameter (cm)")
+```
+  
+## Table of Summary statistics to look at how Urchin diameter varies between species. 
+
+```{r, warning=FALSE, message=FALSE}
+urchin_stats <- urchins %>% 
+  group_by(common_name) %>% 
+  summarize(mean = mean(size),
+            median = median(size),
+            standard_deviation = sd(size),
+            sample_size = n())
+kable(urchin_stats)
+```
+
+When comparing urchin diameter between red and purple urchins, red urchins appear to have larger mean (red urchins = 6.78cm; purple urchins = 4.47cm) and median (red urchins = 7.0cm; purple urchins = 4.5cm) diameter size. Comparing the distribution of diameter sizes, both species appear to have fairly normally distributed data, however, purple urchins seem to have a tighter spread (sd = 1.18cm) compared to red urchins (sd = 1.89cm). Additionally, the percent difference in means (((red-purple)/red)*100) is only 34%, showing that while a difference might be present, it is not that large. 
+
+
+
+```{r, warning=FALSE}
+purple_urchins <- urchins %>% 
+  filter(common_name == "Purple Urchin") %>% 
+  mutate(date = mdy(date)) %>% 
+  mutate(year = year(date)) %>% 
+  mutate(site_full = case_when(
+    site == "NAPL" ~"Naples Reef",
+    site == "AQUE" ~ "Arroyo Quemado Reef", 
+    site == "CARP" ~ "Carpenteria Reef", 
+    site == "MOHK" ~ "Mohawk Reef",
+    site == "IVEE" ~ "Isla Vista Reef"
+  ))
+purple_urchins_summary <- purple_urchins %>% 
+  group_by(site_full) %>% 
+  count(year)
+
+ggplot(purple_urchins_summary, aes(year, n, col = site_full))+
+  geom_line() + 
+  scale_x_continuous(breaks = seq(from= 2007, to = 2020, by = 3))
+```
+
